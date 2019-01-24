@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Use echo -e "$(~/Applications/telnoptoma/uhd51.sh status)\n\n" to print all output at once, rather than as it comes
+# Use echo -e "$(~/Applications/telnoptoma/uhd51.sh status)" to print all output at once
 
 usage () {
 	echo "Usage: $(basename $0) command [parameter] [ip-address [port]]"
@@ -81,12 +81,12 @@ TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"150 1"
 			08) STATUS="HDMI2";;
 			09) STATUS="Wireless";;
 			10) STATUS="Component";;
-            11) STATUS="Flash drive";;
-            12) STATUS="Network Display";;
-            13) STATUS="USB Display";;
-            14) STATUS="HDMI3";;
-            15) STATUS="DisplayPort";;
-            16) STATUS="HDBaseT";;
+			11) STATUS="Flash drive";;
+			12) STATUS="Network Display";;
+			13) STATUS="USB Display";;
+			14) STATUS="HDMI3";;
+			15) STATUS="DisplayPort";;
+			16) STATUS="HDBaseT";;
 			17) STATUS="Media";;
 			*)  STATUS="Unrecognised status! (${RES:30:2})";;
 		   esac
@@ -216,11 +216,11 @@ aspectratio () {
 			COMMAND="16:9"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}60 2"
 			;;
-        "16:10"|3)
+		"16:10"|3)
 			COMMAND="16:10"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}60 3"
 			;;
-        LBX|5)
+		LBX|5)
 			COMMAND="LBX"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}60 5"
 			;;
