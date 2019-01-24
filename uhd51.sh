@@ -32,7 +32,7 @@ help () {
 	echo "Input          hdmi1|hdmi2|hdmi3|dvi-d|dvid|dvia|dvi-a|vga|vga1|vga2|component|svideo|s-video|
                displayport|hdbaset|bnc|wireless|flashdrive|networkdisplay|usbdisplay|
                multimedia|3gsdi|3g-sdi|smarttv|status|state|-s
-			                                             Set input, or get status"
+                                               Set input, or get status"
 	echo "RemoteControl  power|poweroff|mouseup|mouseleft|mouseenter|mouseright|mousedown|mouseleftclick|
                mouserightclick|up|left|enter|right|down|vkeystone+|vkeystone-|volume-|volume+|
                brightness|menu|zoom|dvid|dvi-d|vga1|avmute|svideo|s-video|vga2|video|contrast|
@@ -41,7 +41,7 @@ help () {
                1|2|3|4|5|6|7|8|9|0|gamma|pip|lenshleft|lenshright|lensvleft|lensvright|
                hkeystone+|hkeystone-|hotkeyf1|hotkeyf2|hotkeyf3|pattern|"exit"|hdmi3|
                displayport|mute|3d|db|sleeptimer|home|"return"
-                                                         Send remote control commands"
+                                               Send remote control commands"
 }
 
 if [ $# = 0 ]; then
