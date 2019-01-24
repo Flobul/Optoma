@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Use echo -e "$(~/Applications/telnoptoma/uhd51.sh status)" to print all output at once
+# Use echo -e "$(~/Applications/uhd51/uhd51.sh information)" to print all output at once
 
 usage () {
 	echo "Usage: $(basename $0) command [parameter] [ip-address [port]]"
