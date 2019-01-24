@@ -29,6 +29,19 @@ help () {
 	echo "BrilliantColor 1|2|3|4|5|6|7|8|9|10            Set brilliantcolor 1-10"
 	echo "Audio          Mute|Unmute|Status              Mute, unmute, or get status"
 	echo "Volume         0|1|2|3|4|5|6|7|8|9|10          Set volume 0-10"
+	echo "Input          hdmi1|hdmi2|hdmi3|dvi-d|dvid|dvia|dvi-a|vga|vga1|vga2|component|svideo|s-video|
+               displayport|hdbaset|bnc|wireless|flashdrive|networkdisplay|usbdisplay|
+               multimedia|3gsdi|3g-sdi|smarttv|status|state|-s
+			                                             Set input, or get status"
+	echo "RemoteControl  power|poweroff|mouseup|mouseleft|mouseenter|mouseright|mousedown|mouseleftclick|
+               mouserightclick|up|left|enter|right|down|vkeystone+|vkeystone-|volume-|volume+|
+               brightness|menu|zoom|dvid|dvi-d|vga1|avmute|svideo|s-video|vga2|video|contrast|
+               freeze|lensshift|zoom+|zoom-|focus+|focus-|mode|aspectratio|12vtriggeron|
+               12vtriggeroff|info|re-sync|resync|hdmi1|hdmi2|bnc|component|source|
+               1|2|3|4|5|6|7|8|9|0|gamma|pip|lenshleft|lenshright|lensvleft|lensvright|
+               hkeystone+|hkeystone-|hotkeyf1|hotkeyf2|hotkeyf3|pattern|"exit"|hdmi3|
+               displayport|mute|3d|db|sleeptimer|home|"return"
+                                                         Send remote control commands"
 }
 
 if [ $# = 0 ]; then
@@ -623,6 +636,457 @@ volume () {
 	echo "${COMMAND} : ${STATUS}"
 }
 
+input () {
+	case $1 in
+		hdmi1|1)
+			COMMAND="HDMI1 HDMI/MHL HDMI1/MHL"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 1"
+			;;
+		dvid|dvi-d|2)
+			COMMAND="DVI-D"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 2"
+			;;
+		dvia|dvi-a|3)
+			COMMAND="DVI-A"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 3"
+			;;
+		bnc|4)
+			COMMAND="BNC"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 4"
+			;;
+		vga1|5)
+			COMMAND="VGA VGA1"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 5"
+			;;
+		vga2|6)
+			COMMAND="VGA2"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 6"
+			;;
+		svideo|s-video|9)
+			COMMAND="S-Video"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 9"
+			;;
+		video|10)
+			COMMAND="Video"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 10"
+			;;
+		wireless|11)
+			COMMAND="Wireless"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 11"
+			;;
+		component|14)
+			COMMAND="Component"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 14"
+			;;
+		hdmi2|15)
+			COMMAND="HDMI2 HDMI2/MHL"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 15"
+			;;
+		hdmi3|16)
+			COMMAND="HDMI3"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 16"
+			;;
+		flashdrive|17)
+			COMMAND="Flash Drive"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 17"
+			;;
+		networkdisplay|18)
+			COMMAND="Network Display"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 18"
+			;;
+		usbdisplay|19)
+			COMMAND="USB Display"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 19"
+			;;
+		displayport|20)
+			COMMAND="DisplayPort"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 20"
+			;;
+		hdbaset|21)
+			COMMAND="HDBaseT"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 21"
+			;;
+		3g-sdi|3gsdi|22)
+			COMMAND="3G-SDI"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 22"
+			;;
+		multimedia|23)
+			COMMAND="Multimedia"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 23"
+			;;
+		smarttv|24)
+			COMMAND="Smart TV"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}12 24"
+			;;
+		status|state|-s|?)
+			COMMAND="Status"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}121 1"
+	esac
+
+	# Input control
+	RES=$(telnoptoma "${TELNET_COMMAND}")
+    case ${RES:22:1} in
+    	P)	STATUS="Pass!";;
+		F)	case ${RES:24:2} in
+            Ok)   case ${RES:26:1} in 
+					F) STATUS="Fail!";;
+                    0) STATUS="None";;
+					1) case ${RES:27:1} in
+						0) STATUS="Wireless";;
+						1) STATUS="Component";;
+						2) STATUS="Flash Drive";;
+						3) STATUS="Network Display";;
+						4) STATUS="USB Display";;
+						5) STATUS="DisplayPort";;
+						6) STATUS="HDBaseT";;
+						7) STATUS="Multimedia";;
+						8) STATUS="3G-SDI";;
+						*) STATUS="DVI-D/DVI-A";;
+						esac;;
+					2) case ${RES:27:1} in
+						0) STATUS="Smart TV";;
+						*) STATUS="VGA1";;
+						esac;;
+					3) STATUS="VGA2";;
+					4) STATUS="S-Video";;
+					5) STATUS="Video";;
+					6) STATUS="BNC";;
+					7) STATUS="HDMI1 HDMI1/HML";;
+					8) STATUS="HDMI2 HDMI2/HML";;
+					9) STATUS="HDMI3";;
+                    *)  STATUS="Already in that format! (${RES:26:2})";;
+                  esac;;
+            P)	STATUS="Pass!";;
+			*)	STATUS="Fail!";;
+			esac;;
+		*)    STATUS="2Unrecognised format! (${RES:24:2})";;
+	esac
+	echo "${COMMAND}: ${STATUS}"
+}
+
+remotecontrol () {
+	case $1 in
+		power)	
+			COMMAND="Power"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 1"
+			;;
+		poweroff)	
+			COMMAND="Power Off"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 2"
+			;;
+		mouseup)	
+			COMMAND="Remote Mouse Up"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 3"
+			;;
+		mouseleft)	
+			COMMAND="Remote Mouse Left"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 4"
+			;;
+		mouseenter)	
+			COMMAND="Remote Mouse Enter"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 5"
+			;;
+		mouseright)	
+			COMMAND="Remote Mouse Right"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 6"
+			;;
+		mousedown)	
+			COMMAND="Remote Mouse Down"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 7"
+			;;
+		mouseleftclick)	
+			COMMAND="Mouse Left Click"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 8"
+			;;
+		mouserightclick)	
+			COMMAND="Mouse Right Click"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 9"
+			;;
+		up)	
+			COMMAND="Up"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 10"
+			;;
+		left)	
+			COMMAND="left"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 11"
+			;;
+		enter)	
+			COMMAND="Enter"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 12"
+			;;
+		right)	
+			COMMAND="Right"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 13"
+			;;
+		down)	
+			COMMAND="Down"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 14"
+			;;
+		vkeystone+)	
+			COMMAND="V Keystone +"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 15"
+			;;
+		vkeystone-)	
+			COMMAND="V Keystone -"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 16"
+			;;
+		volume-)	
+			COMMAND="Volume -"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 17"
+			;;
+		volume+)	
+			COMMAND="Volume +"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 18"
+			;;
+		brightness)	
+			COMMAND="Brightness"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 19"
+			;;
+		menu)	
+			COMMAND="Menu"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 20"
+			;;
+		zoom)	
+			COMMAND="Zoom"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 21"
+			;;
+		dvid|dvi-d)	
+			COMMAND="DVI-D"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 22"
+			;;
+		vga1)	
+			COMMAND="VGA-1"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 23"
+			;;
+		avmute)	
+			COMMAND="AV Mute"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 24"
+			;;
+		svideo|s-video)	
+			COMMAND="S-Video"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 25"
+			;;
+		vga2)	
+			COMMAND="VGA-2"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 26"
+			;;
+		video)	
+			COMMAND="Video"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 27"
+			;;
+		contrast)	
+			COMMAND="Contrast"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 28"
+			;;
+		freeze)	
+			COMMAND="Freeze"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 30"
+			;;
+		lensshift)	
+			COMMAND="Lens shift"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 31"
+			;;
+		zoom+)	
+			COMMAND="Zoom+"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 32"
+			;;
+		zoom-)	
+			COMMAND="Zoom-"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 33"
+			;;
+		focus+)	
+			COMMAND="Focus+"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 34"
+			;;
+		focus-)	
+			COMMAND="Focus-"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 35"
+			;;
+		mode)	
+			COMMAND="Mode"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 36"
+			;;
+		aspectratio)	
+			COMMAND="Aspect Ratio"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 37"
+			;;
+		12vtriggeron)	
+			COMMAND="12V Trigger On"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 38"
+			;;
+		12vtriggeroff)	
+			COMMAND="12V Trigger Off"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 39"
+			;;
+		info)	
+			COMMAND="info"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 40"
+			;;
+		re-sync|resync)	
+			COMMAND="Re-sync"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 41"
+			;;
+		hdmi1)	
+			COMMAND="HDMI1"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 42"
+			;;
+		hdmi2)	
+			COMMAND="HDMI2"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 43"
+			;;
+		bnc)	
+			COMMAND="BNC"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 44"
+			;;
+		component)	
+			COMMAND="Component"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 45"
+			;;
+		source)	
+			COMMAND="Source"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 47"
+			;;
+		1)	
+			COMMAND="1"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 51"
+			;;
+		2)	
+			COMMAND="2"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 52"
+			;;
+		3)	
+			COMMAND="3"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 53"
+			;;
+		4)	
+			COMMAND="4"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 54"
+			;;
+		5)	
+			COMMAND="5"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 55"
+			;;
+		6)	
+			COMMAND="6"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 56"
+			;;
+		7)	
+			COMMAND="7"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 57"
+			;;
+		8)	
+			COMMAND="8"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 58"
+			;;
+		9)	
+			COMMAND="9"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 59"
+			;;
+		0)	
+			COMMAND="0"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 60"
+			;;
+		gamma)	
+			COMMAND="Gamma"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 61"
+			;;
+		pip)	
+			COMMAND="PIP"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 63"
+			;;
+		lenshleft)	
+			COMMAND="Lens H Left"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 64"
+			;;
+		lenshright)	
+			COMMAND="Lens H Right"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 65"
+			;;
+		lensvleft)	
+			COMMAND="Lens V Left"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 66"
+			;;
+		lensvright)	
+			COMMAND="Lens V Right"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 67"
+			;;
+		hkeystone+)	
+			COMMAND="H Keystone -"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 68"
+			;;
+		hkeystone-)	
+			COMMAND="H Keystone +"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 69"
+			;;
+		hotkeyf1)	
+			COMMAND="Hot Key F1"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 70"
+			;;
+		hotkeyf2)	
+			COMMAND="Hot Key F2"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 71"
+			;;
+		hotkeyf3)	
+			COMMAND="Hot Key F3"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 72"
+			;;
+		pattern)	
+			COMMAND="Pattern"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 73"
+			;;
+		"exit")	
+			COMMAND="Exit"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 74"
+			;;
+		hdmi3)	
+			COMMAND="HDMI3"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 75"
+			;;
+		displayport)	
+			COMMAND="DisplayPort"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 76"
+			;;
+		mute)	
+			COMMAND="Mute"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 77"
+			;;
+		3d)	
+			COMMAND="3D"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 78"
+			;;
+		db)	
+			COMMAND="DB"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 79"
+			;;
+		sleeptimer)	
+			COMMAND="Sleep Timer"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 80"
+			;;
+		home)	
+			COMMAND="Home"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 81"
+			;;
+		"return")	
+			COMMAND="Return"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 82"
+			;;
+
+	esac
+	
+	# Brightness control
+	RES=$(telnoptoma "${TELNET_COMMAND}")
+	case ${RES:22:1} in
+		F) 	case ${RES:24:1} in
+				F) STATUS="Fail!";;
+                P) STATUS="Pass!";;
+                *) STATUS="Fail!";;
+            esac;;
+		P) STATUS="Pass!";;
+		*) STATUS="Unrecognised remotecontrol! (${RES:22:1})";;
+	esac
+	echo "${COMMAND}: ${STATUS}"
+}
+
 COMMAND=$(echo "$1" | tr "A-Z" "a-z")
 PARAMETER=$(echo "$2" | tr "A-Z" "a-z")
 case $COMMAND in
@@ -742,6 +1206,38 @@ case $COMMAND in
 				if [ $# -ge 4 ]; then TELNET_PORT=$4; fi
 				if [ $# -gt 4 ]; then echo "Error: Too many parameters!"; usage; exit; fi
 				volume "$PARAMETER"
+				;;
+			"")	echo "Error: No Parameter supplied for $PARAMETER command"
+				usage
+				;;
+			*)	echo "Error: Unknown Parameter for $PARAMETER command: '$2'"
+				usage
+				;;
+		esac
+		;;
+    input)	case $PARAMETER in
+			hdmi1|hdmi2|hdmi3|dvi-d|dvid|dvia|dvi-a|vga|vga1|vga2|component|svideo|s-video|displayport|hdbaset|bnc|wireless|flashdrive|networkdisplay|usbdisplay|multimedia|3gsdi|3g-sdi|smarttv|status|state|-s|?)
+				if [ $# -ge 3 ]; then IP_ADDRESS=$3; fi
+				if [ $# -ge 4 ]; then TELNET_PORT=$4; fi
+				if [ $# -gt 4 ]; then echo "Error: Too many parameters!"; usage; exit; fi
+				input "$PARAMETER"
+				;;
+			"")	echo "Error: No Parameter supplied for $PARAMETER command"
+				usage
+				;;
+			*)	echo "Error: Unknown Parameter for $PARAMETER command: '$2'"
+				usage
+				;;
+		esac
+		;;
+	help)	help
+		;;
+    remotecontrol)	case $PARAMETER in
+			power|poweroff|mouseup|mouseleft|mouseenter|mouseright|mousedown|mouseleftclick|mouserightclick|up|left|enter|right|down|vkeystone+|vkeystone-|volume-|volume+|brightness|menu|zoom|dvid|dvi-d|vga1|avmute|svideo|s-video|vga2|video|contrast|freeze|lensshift|zoom+|zoom-|focus+|focus-|mode|aspectratio|12vtriggeron|12vtriggeroff|info|re-sync|resync|hdmi1|hdmi2|bnc|component|source|1|2|3|4|5|6|7|8|9|0|gamma|pip|lenshleft|lenshright|lensvleft|lensvright|hkeystone+|hkeystone-|hotkeyf1|hotkeyf2|hotkeyf3|pattern|"exit"|hdmi3|displayport|mute|3d|db|sleeptimer|home|"return")
+				if [ $# -ge 3 ]; then IP_ADDRESS=$3; fi
+				if [ $# -ge 4 ]; then TELNET_PORT=$4; fi
+				if [ $# -gt 4 ]; then echo "Error: Too many parameters!"; usage; exit; fi
+				remotecontrol "$PARAMETER"
 				;;
 			"")	echo "Error: No Parameter supplied for $PARAMETER command"
 				usage
