@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Use echo -e "$(~/Applications/uhd51/uhd51.sh)" to print all output at once
+# Use echo -e "$(~/Applications/uhd51/uhd51.sh information)" to print all output at once
 
 usage () {
 	echo "Usage: $(basename $0) command [parameter] [ip-address [port]]"
@@ -10,24 +10,29 @@ help () {
 	usage
 	echo
 	echo "Command  Parameter"
+	echo "FanSpeed                                       Get current Fan Speed"
+	echo "Systemp                                        Get current System temperature"
+	echo "Filterusage                                    Get current Filter Usage in hours"
+	echo "PowerMode                                      Get current Power Mode (Standby)"
+	echo "CurrentWatt                                    Get current Consomation in Watt"
 	echo "Information                                    Get current information of projector"
+	echo "OtherInformation                               Get other information of projector"
 	echo "Power          On|Off|Status                   Turn projector on or off, or get power status"
 	echo "Brightness     Bright|Eco|Eco+|Dynamyc|DynamicBlack Off|
                DynamicBlack 1|DynamicBlack 2|DynamicBlack 3|Status
-                                               Turn brightness mode, eco mode, or get status"
-	echo "ApectRatio     4:3|16:9|16:10|LBX|Native|Auto|Auto235|
+                                               Set Brightness Mode, or get status"
+	echo "AspectRatio    4:3|16:9|16:10|LBX|Native|Auto|Auto235|
                Auto235_Subtitle|Superwide|Auto3D|Status
-                                               Set aspectratio 4:3, 16:9, 16:10, lbx, native, auto,
-                                               auto235, auto235_subtitle, superwide, auto3D, or get status"
+                                               Set Aspect Ratio, or get status"
 	echo "DisplayMode    None|Presentation|Bright|Cinema|sRGB-Reference-Standard|User|User2|
                Blackboard|Classroom|3D|DICOMSIM|Film|Game|Cinema|Vivid|ISFDay|
                ISFNight|ISF3D|2DHS|BlendingMode|Sport|HDR|HDRSim|Status
-                                               Set display Mode, or get status"
+                                               Set Display Mode, or get status"
 	echo "ColorTemp      Standard|D65|Cool|D75|Cold|D83|Warm|
                D55|D93|Native|Bright|Status|Reset
-                                               Set color temperature, reset or get status"
-	echo "BrilliantColor 1|2|3|4|5|6|7|8|9|10            Set brilliantcolor 1-10"
-	echo "Audio          Mute|Unmute|Status              Mute, unmute, or get status"
+                                               Set Color Temperature, reset or get status"
+	echo "BrilliantColor 1|2|3|4|5|6|7|8|9|10            Set Brilliantcolor™"
+	echo "Mute           On|Off|Status                   Mute, unmute, or get status"
 	echo "Volume         0|1|2|3|4|5|6|7|8|9|10          Set volume 0-10"
 	echo "Input          hdmi1|hdmi2|hdmi3|dvi-d|dvid|dvia|dvi-a|vga|vga1|vga2|component|svideo|s-video|
                displayport|hdbaset|bnc|wireless|flashdrive|networkdisplay|usbdisplay|
@@ -54,7 +59,7 @@ IP_ADDRESS=192.168.1.30
 TELNET_PORT=23
 
 # Detailed command
-# Real command looks like : LeadCode ProjectorID CommandID space variable CarriageReturn
+# Real command looks like that : LeadCode ProjectorID CommandID space variable CarriageReturn
 # ~XXXXX n CR
 LEAD_CODE="~"
 PROJECTOR_ID=01
@@ -64,6 +69,95 @@ telnoptoma () {
 	echo -en "${1}\r" | nc -n4 -w 1 ${IP_ADDRESS} ${TELNET_PORT} | tr '\r' '\n' | tr -d '\0'
 }
 
+fanspeed () {
+COMMAND_VALUE=""
+for (( COMMAND_VALUE=1; COMMAND_VALUE<=4; COMMAND_VALUE++ )); do
+TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"351 ${COMMAND_VALUE}"
+
+	# Fan speed
+    COMMAND="Fan ${COMMAND_VALUE} Speed"
+	RES=$(telnoptoma "${TELNET_COMMAND}")
+	case ${RES:22:2} in
+		F|"")  STATUS="Unrecognised command!";;
+		Ok) if [[ ${RES:24:4} = +([0-9][0-9][0-9][0-9]) ]]
+				then STATUS="${RES:24:4}"
+			else STATUS="Unrecognised Fan speed (${RES:24:4})"
+			fi;;
+		*)  STATUS="Unrecognised Fan Speed status!";;
+	esac
+	echo "${COMMAND}: ${STATUS}"
+done
+}
+
+systemp () {
+COMMAND="System Temperature"
+TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"352 1"
+
+	# Systemp temperature
+	RES=$(telnoptoma "${TELNET_COMMAND}")
+	case ${RES:22:2} in
+		F|"")  STATUS="Unrecognised command!";;
+		Ok) if [[ ${RES:24:4} = +([0-9][0-9][0-9][0-9]) ]]
+				then STATUS="${RES:24:4}"
+			else STATUS="Unrecognised System Temperature (${RES:24:4})"
+			fi;;
+		*)  STATUS="Unrecognised System Temperature status!";;
+	esac
+	echo "${COMMAND}: ${STATUS}"
+}
+
+filterusage () {
+COMMAND="Filter Usage Hours"
+TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"321 1"
+
+	# Filter Usage Hours
+	RES=$(telnoptoma "${TELNET_COMMAND}")
+	case ${RES:22:2} in
+		F|"")  STATUS="Unrecognised command!";;
+		Ok) if [[ ${RES:24:4} = +([0-9][0-9][0-9][0-9]) ]]
+				then STATUS="${RES:24:4} hours"
+			else STATUS="Unrecognised Filter Usage Hours (${RES:24:4})"
+			fi;;
+		*)  STATUS="Unrecognised Filter Usage Hours status!";;
+	esac
+	echo "${COMMAND}: ${STATUS}"
+}
+
+powermode () {
+COMMAND="Power Mode"
+TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"150 16"
+
+	# Power Mode
+	RES=$(telnoptoma "${TELNET_COMMAND}")
+	case ${RES:22:2} in
+		Ok) case ${RES:24:1} in
+			1)    STATUS="Active";;
+			0)    STATUS="Eco.";;
+            esac;;
+		F|"") STATUS="Unrecognised command!";;
+		*) STATUS="Unrecognised status! (${RES:22:2})";;
+	esac
+	echo "${COMMAND}: ${STATUS}"
+}
+
+currentwatt () {
+COMMAND="Current Watt"
+TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"358 1"
+
+	# Systemp temperature
+    COMMAND="Current Watt"
+	RES=$(telnoptoma "${TELNET_COMMAND}")
+	case ${RES:22:2} in
+		F|"")  STATUS="Unrecognised command!";;
+		Ok) if [[ ${RES:24:4} = +([0-9][0-9][0-9][0-9]) ]]
+				then STATUS="${RES:24:4}"
+			else STATUS="Unrecognised Current Watt (${RES:24:4})"
+			fi;;
+		*)  STATUS="Unrecognised Current Watt status!";;
+	esac
+	echo "${COMMAND}: ${STATUS}"
+}
+
 information () {
 COMMAND="Information"
 TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"150 1"
@@ -71,7 +165,7 @@ TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"150 1"
 	# Information
 	RES=$(telnoptoma "${TELNET_COMMAND}")
 	case ${RES:22:2} in
-		F) STATUS="Fail!";;
+		F|"") STATUS="Unrecognised command!";;
 		Ok) case ${RES:24:1} in
 			0) STATUS="Off";;
 			1) STATUS="On";;
@@ -79,7 +173,10 @@ TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"150 1"
 		   esac
 		   echo "Status:            ${STATUS}"
 		   case ${RES:25:5} in
-			*) STATUS="${RES:25:5} hours";;
+			*) if [[ ${RES:25:5} = +([0-9][0-9][0-9][0-9][0-9]) ]]
+				then STATUS="${RES:25:5} hours"
+			else STATUS="Unrecognised Hours value (${RES:25:5})"
+				fi;;
 		   esac
 		   echo "Lamp hour:         ${STATUS}"
 		   case ${RES:30:2} in
@@ -140,9 +237,56 @@ TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"150 1"
 	RES=$(telnoptoma)
 }
 
+otherinformation () {    ##may take time
+COMMAND_VALUE=""
+for (( COMMAND_VALUE=2; COMMAND_VALUE<=20; COMMAND_VALUE++ )); do
+TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"150 ${COMMAND_VALUE}"
+info=([2]="Native Resolution  " [3]="Main Source        " [4]="- Resolution       " [5]="- Signal Format    " [6]="- Pixel Clock      " [7]="- Horz Refresh     " [8]="- Vert Refresh     " [9]="Sub Source         " [10]="- Resolution       " [11]="- Signal Format    " [12]="- Pixel Clock      " [13]="- Horz Refresh     " [14]="- Vert Refresh     " [15]="Light Source Mode  " [16]="Standby Power Mode " [17]="DHCP               " [18]="System Temperature " [19]="Refresh rate       " [20]="Current Lamp Source")
+
+	# Other information
+    COMMAND="${info[COMMAND_VALUE]}"
+	RES=$(telnoptoma "${TELNET_COMMAND}")
+	case ${RES:22:2} in
+		F|"")  STATUS="Unrecognised command!";;
+		Ok) case ${RES:24:1} in
+			3)      case ${RES:25:1} in
+					"")     case ${COMMAND_VALUE} in
+							20)    STATUS="Current Lamp Source: Both";;
+							esac;;
+					*)    STATUS="${RES:24}";;
+					esac;;
+			2)      case ${RES:25:1} in
+					"")     case ${COMMAND_VALUE} in
+							16)    STATUS="Standby Power Mode Eco.";;
+							20)    STATUS="Current Lamp Source: Lamp2";;
+							esac;;
+					*)    STATUS="${RES:24}";;
+					esac;;
+			1)      case ${RES:25:1} in
+					"")     case ${COMMAND_VALUE} in
+							16)    STATUS="Standby Power Mode Active";;
+							17)    STATUS="DHCP On";;
+							20)    STATUS="Current Lamp Source: Lamp1";;
+							esac;;
+					*)    STATUS="${RES:24}";;
+					esac;;
+			0)		case ${RES:25:1} in
+					"")     case ${COMMAND_VALUE} in
+							17)    STATUS="DHCP Off";;
+							esac;;
+					*)    STATUS="${RES:24}";;
+					esac;;
+			*)	STATUS="${RES:24}";;
+            esac;;
+		*)  STATUS="Unrecognised ${COMMAND} status!";;
+	esac
+	echo "${COMMAND}: ${STATUS}"
+done
+}
+
 power () {
 	case $1 in
-		on|1)	
+		on|1)
 			COMMAND="Power On"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}00 1"
 			;;
@@ -163,15 +307,15 @@ power () {
 			1)    STATUS="Power on";;
 			0)    STATUS="Power off";;
             esac;;
-		F) STATUS="Fail!";;
+		F|"") STATUS="Unrecognised command!";;
 		*) STATUS="Unrecognised status! (${RES:22:2})";;
 	esac
-	echo "${COMMAND} : ${STATUS}"
+	echo "${COMMAND}: ${STATUS}"
 }
 
 brightness () {
 	case $1 in
-		bright|lumineux|-l)	
+		bright|-b)
 			COMMAND="Bright"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}110 1"
 			;;
@@ -204,21 +348,21 @@ brightness () {
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}191 3"
 			;;
 	esac
-	
+
 	# Brightness control
 	RES=$(telnoptoma "${TELNET_COMMAND}")
 	case ${RES:22:1} in
 		F) 	case ${RES:24:1} in
-				F) STATUS="Fail!";;
-                P) STATUS="Pass!";;
-                *) STATUS="Fail!";;
-            esac;;
+						F|"") STATUS="Unrecognised command!";;
+        		P) STATUS="Pass!";;
+        		*) STATUS="Unrecognised brightness! (${RES:22:1})";;
+        esac;;
 		P) STATUS="Pass!";;
 		*) STATUS="Unrecognised brightness! (${RES:22:1})";;
 	esac
 	echo "${COMMAND}: ${STATUS}"
 }
-	
+
 aspectratio () {
 	case $1 in
 		"4:3"|1)
@@ -261,32 +405,33 @@ aspectratio () {
 			COMMAND="Auto 3D"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}60 12"
 			;;
-        status|state|?)
-        	COMMAND="Status"
-            TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}127 1"
-            ;;
+    status|state|?)
+      COMMAND="Status"
+      TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}127 1"
+      ;;
 	esac
-    
+
 	# Format control
 	RES=$(telnoptoma "${TELNET_COMMAND}")
     case ${RES:22:1} in
     	P)	STATUS="Pass!";;
-		F)	case ${RES:24:2} in
-            Ok)   case ${RES:26:2} in
-					F)	STATUS="Fail!";;
-                    01) STATUS="4:3";;
-					02) STATUS="16:9";;
-					03) STATUS="16:10";;
-					05) STATUS="LBX";;
-					06) STATUS="Native";;
-					07) STATUS="Auto";;
-					08) STATUS="Auto235";;
-					09) STATUS="Superwide";;
-					11) STATUS="Auto235_Subtitle";;
-					12) STATUS="Auto 3D";;
-                    *) 	STATUS="Already in that format! (${RES:26:2})";;
-                  esac;;
-            P)	STATUS="Pass!";;
+			F)	case ${RES:24:2} in
+					P)  STATUS="Pass!";;
+          Ok) case ${RES:26:2} in
+							F)	STATUS="Fail!";;
+          		01) STATUS="4:3";;
+							02) STATUS="16:9";;
+							03) STATUS="16:10";;
+							05) STATUS="LBX";;
+							06) STATUS="Native";;
+							07) STATUS="Auto";;
+							08) STATUS="Auto235";;
+							09) STATUS="Superwide";;
+							11) STATUS="Auto235_Subtitle";;
+							12) STATUS="Auto 3D";;
+          		*) 	STATUS="Already in that format! (${RES:26:2})";;
+          		esac;;
+      P)	STATUS="Pass!";;
 			*)	STATUS="Fail!";;
 			esac;;
 		*)    STATUS="2Unrecognised format! (${RES:24:2})";;
@@ -394,45 +539,46 @@ displaymode () {
 	RES=$(telnoptoma "${TELNET_COMMAND}")
     case ${RES:22:1} in
     	P)	STATUS="Pass!";;
-		F)	case ${RES:24:2} in
-            Ok)   case ${RES:26:2} in
-					F)	STATUS="Fail!";;
-					00) STATUS="None";;
-					01) STATUS="Presentation";;
-					02) STATUS="Bright";;
-					03) STATUS="Cinema";;
-					04) STATUS="sRGB/Reference/Standard";;
-					05) STATUS="User";;
-					06) STATUS="User2";;
-					07) STATUS="Blackboard";;
-					08) STATUS="Classroom";;
-					09) STATUS="3D";;
-					10) STATUS="DICOM SIM.";;
-					11) STATUS="Film";;
-					12) STATUS="Game";;
-					13) STATUS="Cinema";;
-					14) STATUS="Vivid";;
-					15) STATUS="ISF Day";;
-					16) STATUS="ISF Night";;
-					17) STATUS="ISF 3D";;
-					18) STATUS="2D High Speed";;
-					19) STATUS="Blending Mode";;
-					20) STATUS="Sport";;
-					21) STATUS="HDR";;
-					22) STATUS="HDR Sim";;
-					*)  STATUS="Unrecognised display mode! (${RES:26:2})";;
-                  esac;;
-            P)	STATUS="Pass!";;
-			*)	STATUS="Fail!";;
+			F)	case ${RES:24:2} in
+          Ok) case ${RES:26:2} in
+							F)	STATUS="Fail!";;
+							00) STATUS="None";;
+							01) STATUS="Presentation";;
+							02) STATUS="Bright";;
+							03) STATUS="Cinema";;
+							04) STATUS="sRGB/Reference/Standard";;
+							05) STATUS="User";;
+							06) STATUS="User2";;
+							07) STATUS="Blackboard";;
+							08) STATUS="Classroom";;
+							09) STATUS="3D";;
+							10) STATUS="DICOM SIM.";;
+							11) STATUS="Film";;
+							12) STATUS="Game";;
+							13) STATUS="Cinema";;
+							14) STATUS="Vivid";;
+							15) STATUS="ISF Day";;
+							16) STATUS="ISF Night";;
+							17) STATUS="ISF 3D";;
+							18) STATUS="2D High Speed";;
+							19) STATUS="Blending Mode";;
+							20) STATUS="Sport";;
+							21) STATUS="HDR";;
+							22) STATUS="HDR Sim";;
+							"")	STATUS="Already in that Display mode!";;
+							*)  STATUS="Unrecognised display mode! (${RES:26:2})";;
+              esac;;
+					*)	STATUS="Unrecognised command!";;
 			esac;;
-		*)    STATUS="2Unrecognised format! (${RES:24:2})";;
+		"")	STATUS="Unrecognised command!";;
+		*)  STATUS="Unrecognised display mode! (${RES:24:2})";;
 	esac
 	echo "${COMMAND}: ${STATUS}"
 }
 
 colortemp () {
 	case $1 in
-		standard|d65|1)	
+		standard|d65|1)
 			COMMAND="Standard D65"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}36 1"
 			;;
@@ -464,35 +610,35 @@ colortemp () {
 			COMMAND="Status"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}128 1"
 	esac
-	
+
 	# Color temperature control
 	RES=$(telnoptoma "${TELNET_COMMAND}")
     case ${RES:22:1} in
     	P)	STATUS="Pass!";;
 		F)	case ${RES:24:2} in
-            Ok)   case ${RES:26:1} in
-					F) STATUS="Fail!";;
-                    0) STATUS="Standard";;
-					1) STATUS="Cool D55";;
-					2) STATUS="Cold D65";;
-					3) STATUS="Warm";;
-					4) STATUS="D75";;
-					5) STATUS="D83";;
-					6) STATUS="D93";;
-					7) STATUS="Native (Bright)";;
-                    *) STATUS="Already in that format! (${RES:26:2})";;
+          Ok)     case ${RES:26:1} in
+          			  0) STATUS="Standard";;
+									1) STATUS="Cool D55";;
+									2) STATUS="Cold D65";;
+									3) STATUS="Warm";;
+									4) STATUS="D75";;
+									5) STATUS="D83";;
+									6) STATUS="D93";;
+									7) STATUS="Native (Bright)";;
+                  "") STATUS="Already in that Color temperature!";;
                   esac;;
-            P)	STATUS="Pass!";;
+          P)	STATUS="Pass!";;
 			*)	STATUS="Fail!";;
 			esac;;
-		*)    STATUS="2Unrecognised format! (${RES:24:2})";;
+		"")	STATUS="Unrecognised command!";;
+		*)  STATUS="2Unrecognised format! (${RES:24:2})";;
 	esac
 	echo "${COMMAND}: ${STATUS}"
 }
 
 brilliantcolor () {
 	case $1 in
-		1)	
+		1)
 			COMMAND="BrilliantColor™ 1"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}34 1"
 			;;
@@ -533,15 +679,14 @@ brilliantcolor () {
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}34 10"
 			;;
 	esac
-	
+
 	# Brilliant color control
 	RES=$(telnoptoma "${TELNET_COMMAND}")
 	case ${RES:22:1} in
-		F) 	case ${RES:24:1} in
-				F) STATUS="Fail!";;
-                P) STATUS="Pass!";;
-                *) STATUS="Fail!";;
-            esac;;
+		F|"") 	case ${RES:24:1} in
+				"")	STATUS="Unrecognised command!";;
+        *)  STATUS="Fail!";;
+        esac;;
 		P) STATUS="Pass!";;
 		*) STATUS="Unrecognised Brilliant color! (${RES:22:1})";;
 	esac
@@ -550,7 +695,7 @@ brilliantcolor () {
 
 mute () {
 	case $1 in
-		off|0)	
+		off|0)
 			COMMAND="Unmute"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}80 0"
 			;;
@@ -559,27 +704,27 @@ mute () {
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}80 1"
 			;;
 		status|state|-s|?)
-			COMMAND="Audio Status"
+			COMMAND="Mute Status"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}356 1"
 			;;
 	esac
 
-	# Audio control
+	# Mute control
 	RES=$(telnoptoma "${TELNET_COMMAND}")
 	case ${RES:22:2} in
-		Ok) case ${RES:24:1} in
-			1)    STATUS="Mute on";;
-			0)    STATUS="Mute off";;
+		Ok) 	case ${RES:24:1} in
+						1)    STATUS="Mute on";;
+						0)    STATUS="Mute off";;
             esac;;
-		F) STATUS="Fail!";;
+		F|"") STATUS="Unrecognised command!";;
 		*) STATUS="Unrecognised status! (${RES:22:2})";;
 	esac
-	echo "${COMMAND} : ${STATUS}"
+	echo "${COMMAND}: ${STATUS}"
 }
 
 volume () {
 	case $1 in
-		0)	
+		0)
 			COMMAND="Volume 0"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}81 0"
 			;;
@@ -623,7 +768,6 @@ volume () {
 			COMMAND="Volume 10"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}81 10"
 			;;
-
 	esac
 
 	# Audio control
@@ -631,9 +775,9 @@ volume () {
 	case ${RES:22:2} in
 		P) STATUS="Pass!";;
 		F) STATUS="Fail!";;
-		*) STATUS="Unrecognised status! (${RES:22:2})";;
+		*) STATUS="Unrecognised Volume! (${RES:22:2})";;
 	esac
-	echo "${COMMAND} : ${STATUS}"
+	echo "${COMMAND}: ${STATUS}"
 }
 
 input () {
@@ -726,27 +870,27 @@ input () {
 	# Input control
 	RES=$(telnoptoma "${TELNET_COMMAND}")
     case ${RES:22:1} in
-    	P)	STATUS="Pass!";;
+    P)	STATUS="Pass!";;
 		F)	case ${RES:24:2} in
-            Ok)   case ${RES:26:1} in 
+          Ok)   case ${RES:26:1} in
 					F) STATUS="Fail!";;
-                    0) STATUS="None";;
-					1) case ${RES:27:1} in
-						0) STATUS="Wireless";;
-						1) STATUS="Component";;
-						2) STATUS="Flash Drive";;
-						3) STATUS="Network Display";;
-						4) STATUS="USB Display";;
-						5) STATUS="DisplayPort";;
-						6) STATUS="HDBaseT";;
-						7) STATUS="Multimedia";;
-						8) STATUS="3G-SDI";;
-						*) STATUS="DVI-D/DVI-A";;
-						esac;;
-					2) case ${RES:27:1} in
-						0) STATUS="Smart TV";;
-						*) STATUS="VGA1";;
-						esac;;
+          0) STATUS="None";;
+					1)  case ${RES:27:1} in
+							0) STATUS="Wireless";;
+							1) STATUS="Component";;
+							2) STATUS="Flash Drive";;
+							3) STATUS="Network Display";;
+							4) STATUS="USB Display";;
+							5) STATUS="DisplayPort";;
+							6) STATUS="HDBaseT";;
+							7) STATUS="Multimedia";;
+							8) STATUS="3G-SDI";;
+							"") STATUS="DVI-D/DVI-A";;
+							esac;;
+					2)  case ${RES:27:1} in
+							0) STATUS="Smart TV";;
+							"") STATUS="VGA1";;
+							esac;;
 					3) STATUS="VGA2";;
 					4) STATUS="S-Video";;
 					5) STATUS="Video";;
@@ -754,335 +898,338 @@ input () {
 					7) STATUS="HDMI1 HDMI1/HML";;
 					8) STATUS="HDMI2 HDMI2/HML";;
 					9) STATUS="HDMI3";;
-                    *)  STATUS="Already in that format! (${RES:26:2})";;
-                  esac;;
-            P)	STATUS="Pass!";;
+          "")STATUS="Already in that Input! (${RES:26:2})";;
+          *) STATUS="Unrecognised Input! (${RES:26:2})";;
+          esac;;
+        P)	STATUS="Pass!";;
+			"")	STATUS="Unrecognised command!";;
 			*)	STATUS="Fail!";;
 			esac;;
-		*)    STATUS="2Unrecognised format! (${RES:24:2})";;
+		"")  STATUS="Unrecognised command";;
+		*)   STATUS="2Unrecognised format! (${RES:24:2})";;
 	esac
 	echo "${COMMAND}: ${STATUS}"
 }
 
 remotecontrol () {
 	case $1 in
-		power)	
+		power)
 			COMMAND="Power"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 1"
 			;;
-		poweroff)	
+		poweroff)
 			COMMAND="Power Off"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 2"
 			;;
-		mouseup)	
+		mouseup)
 			COMMAND="Remote Mouse Up"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 3"
 			;;
-		mouseleft)	
+		mouseleft)
 			COMMAND="Remote Mouse Left"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 4"
 			;;
-		mouseenter)	
+		mouseenter)
 			COMMAND="Remote Mouse Enter"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 5"
 			;;
-		mouseright)	
+		mouseright)
 			COMMAND="Remote Mouse Right"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 6"
 			;;
-		mousedown)	
+		mousedown)
 			COMMAND="Remote Mouse Down"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 7"
 			;;
-		mouseleftclick)	
+		mouseleftclick)
 			COMMAND="Mouse Left Click"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 8"
 			;;
-		mouserightclick)	
+		mouserightclick)
 			COMMAND="Mouse Right Click"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 9"
 			;;
-		up)	
+		up)
 			COMMAND="Up"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 10"
 			;;
-		left)	
+		left)
 			COMMAND="left"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 11"
 			;;
-		enter)	
+		enter)
 			COMMAND="Enter"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 12"
 			;;
-		right)	
+		right)
 			COMMAND="Right"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 13"
 			;;
-		down)	
+		down)
 			COMMAND="Down"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 14"
 			;;
-		vkeystone+)	
+		vkeystone+)
 			COMMAND="V Keystone +"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 15"
 			;;
-		vkeystone-)	
+		vkeystone-)
 			COMMAND="V Keystone -"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 16"
 			;;
-		volume-)	
+		volume-)
 			COMMAND="Volume -"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 17"
 			;;
-		volume+)	
+		volume+)
 			COMMAND="Volume +"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 18"
 			;;
-		brightness)	
+		brightness)
 			COMMAND="Brightness"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 19"
 			;;
-		menu)	
+		menu)
 			COMMAND="Menu"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 20"
 			;;
-		zoom)	
+		zoom)
 			COMMAND="Zoom"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 21"
 			;;
-		dvid|dvi-d)	
+		dvid|dvi-d)
 			COMMAND="DVI-D"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 22"
 			;;
-		vga1)	
+		vga1)
 			COMMAND="VGA-1"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 23"
 			;;
-		avmute)	
+		avmute)
 			COMMAND="AV Mute"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 24"
 			;;
-		svideo|s-video)	
+		svideo|s-video)
 			COMMAND="S-Video"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 25"
 			;;
-		vga2)	
+		vga2)
 			COMMAND="VGA-2"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 26"
 			;;
-		video)	
+		video)
 			COMMAND="Video"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 27"
 			;;
-		contrast)	
+		contrast)
 			COMMAND="Contrast"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 28"
 			;;
-		freeze)	
+		freeze)
 			COMMAND="Freeze"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 30"
 			;;
-		lensshift)	
+		lensshift)
 			COMMAND="Lens shift"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 31"
 			;;
-		zoom+)	
+		zoom+)
 			COMMAND="Zoom+"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 32"
 			;;
-		zoom-)	
+		zoom-)
 			COMMAND="Zoom-"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 33"
 			;;
-		focus+)	
+		focus+)
 			COMMAND="Focus+"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 34"
 			;;
-		focus-)	
+		focus-)
 			COMMAND="Focus-"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 35"
 			;;
-		mode)	
+		mode)
 			COMMAND="Mode"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 36"
 			;;
-		aspectratio)	
+		aspectratio)
 			COMMAND="Aspect Ratio"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 37"
 			;;
-		12vtriggeron)	
+		12vtriggeron)
 			COMMAND="12V Trigger On"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 38"
 			;;
-		12vtriggeroff)	
+		12vtriggeroff)
 			COMMAND="12V Trigger Off"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 39"
 			;;
-		info)	
+		info)
 			COMMAND="info"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 40"
 			;;
-		re-sync|resync)	
+		re-sync|resync)
 			COMMAND="Re-sync"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 41"
 			;;
-		hdmi1)	
+		hdmi1)
 			COMMAND="HDMI1"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 42"
 			;;
-		hdmi2)	
+		hdmi2)
 			COMMAND="HDMI2"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 43"
 			;;
-		bnc)	
+		bnc)
 			COMMAND="BNC"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 44"
 			;;
-		component)	
+		component)
 			COMMAND="Component"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 45"
 			;;
-		source)	
+		source)
 			COMMAND="Source"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 47"
 			;;
-		1)	
+		1)
 			COMMAND="1"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 51"
 			;;
-		2)	
+		2)
 			COMMAND="2"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 52"
 			;;
-		3)	
+		3)
 			COMMAND="3"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 53"
 			;;
-		4)	
+		4)
 			COMMAND="4"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 54"
 			;;
-		5)	
+		5)
 			COMMAND="5"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 55"
 			;;
-		6)	
+		6)
 			COMMAND="6"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 56"
 			;;
-		7)	
+		7)
 			COMMAND="7"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 57"
 			;;
-		8)	
+		8)
 			COMMAND="8"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 58"
 			;;
-		9)	
+		9)
 			COMMAND="9"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 59"
 			;;
-		0)	
+		0)
 			COMMAND="0"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 60"
 			;;
-		gamma)	
+		gamma)
 			COMMAND="Gamma"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 61"
 			;;
-		pip)	
+		pip)
 			COMMAND="PIP"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 63"
 			;;
-		lenshleft)	
+		lenshleft)
 			COMMAND="Lens H Left"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 64"
 			;;
-		lenshright)	
+		lenshright)
 			COMMAND="Lens H Right"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 65"
 			;;
-		lensvleft)	
+		lensvleft)
 			COMMAND="Lens V Left"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 66"
 			;;
-		lensvright)	
+		lensvright)
 			COMMAND="Lens V Right"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 67"
 			;;
-		hkeystone+)	
+		hkeystone+)
 			COMMAND="H Keystone -"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 68"
 			;;
-		hkeystone-)	
+		hkeystone-)
 			COMMAND="H Keystone +"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 69"
 			;;
-		hotkeyf1)	
+		hotkeyf1)
 			COMMAND="Hot Key F1"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 70"
 			;;
-		hotkeyf2)	
+		hotkeyf2)
 			COMMAND="Hot Key F2"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 71"
 			;;
-		hotkeyf3)	
+		hotkeyf3)
 			COMMAND="Hot Key F3"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 72"
 			;;
-		pattern)	
+		pattern)
 			COMMAND="Pattern"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 73"
 			;;
-		"exit")	
+		"exit")
 			COMMAND="Exit"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 74"
 			;;
-		hdmi3)	
+		hdmi3)
 			COMMAND="HDMI3"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 75"
 			;;
-		displayport)	
+		displayport)
 			COMMAND="DisplayPort"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 76"
 			;;
-		mute)	
+		mute)
 			COMMAND="Mute"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 77"
 			;;
-		3d)	
+		3d)
 			COMMAND="3D"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 78"
 			;;
-		db)	
+		db)
 			COMMAND="DB"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 79"
 			;;
-		sleeptimer)	
+		sleeptimer)
 			COMMAND="Sleep Timer"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 80"
 			;;
-		home)	
+		home)
 			COMMAND="Home"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 81"
 			;;
-		"return")	
+		"return")
 			COMMAND="Return"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}140 82"
 			;;
-
 	esac
-	
+
 	# Brightness control
 	RES=$(telnoptoma "${TELNET_COMMAND}")
 	case ${RES:22:1} in
 		F) 	case ${RES:24:1} in
 				F) STATUS="Fail!";;
                 P) STATUS="Pass!";;
+				"")	STATUS="Unrecognised command!";;
                 *) STATUS="Fail!";;
             esac;;
 		P) STATUS="Pass!";;
-		*) STATUS="Unrecognised remotecontrol! (${RES:22:1})";;
+		*) STATUS="Fail! (${RES:22:1})";;
 	esac
 	echo "${COMMAND}: ${STATUS}"
 }
@@ -1095,8 +1242,13 @@ case $COMMAND in
 		if [ $# -gt 3 ]; then echo "Error: Too many parameters!"; usage; exit; fi
 		information
 		;;
+	otherinformation)	if [ $# -ge 2 ]; then IP_ADDRESS=$2; fi
+		if [ $# -ge 3 ]; then TELNET_PORT=$3; fi
+		if [ $# -gt 3 ]; then echo "Error: Too many parameters!"; usage; exit; fi
+		otherinformation
+		;;
 	power)	case $PARAMETER in
-			on|off|of|-s|status|1|0|?)
+			on|off|of|-s|status|state|1|0|?)
 				if [ $# -ge 3 ]; then IP_ADDRESS=$3; fi
 				if [ $# -ge 4 ]; then TELNET_PORT=$4; fi
 				if [ $# -gt 4 ]; then echo "Error: Too many parameters!"; usage; exit; fi
@@ -1111,7 +1263,7 @@ case $COMMAND in
 		esac
 		;;
 	brightness)	case $PARAMETER in
-			bright|eco|ecoplus|eco-plus|-eplus|dynamic|dboff|db1|db2|db3|-l|-e|-d|?)
+			bright|eco|ecoplus|eco-plus|-eplus|dynamic|dboff|db1|db2|db3|-b|-e|-d|?)
 				if [ $# -ge 3 ]; then IP_ADDRESS=$3; fi
 				if [ $# -ge 4 ]; then TELNET_PORT=$4; fi
 				if [ $# -gt 4 ]; then echo "Error: Too many parameters!"; usage; exit; fi
@@ -1126,7 +1278,7 @@ case $COMMAND in
 		esac
 		;;
 	aspectratio)	case $PARAMETER in
-			"4:3"|"16:9"|"16:10"|lbx|native|auto|auto235|auto235_subtitle|superwide|auto3D|1|2|3|5|6|7|8|9|11|12|status|state|-s|?)
+			"4:3"|"16:9"|"16:10"|lbx|native|auto|auto235|auto235_subtitle|superwide|auto3d|1|2|3|5|6|7|8|9|11|12|status|state|-s|?)
 				if [ $# -ge 3 ]; then IP_ADDRESS=$3; fi
 				if [ $# -ge 4 ]; then TELNET_PORT=$4; fi
 				if [ $# -gt 4 ]; then echo "Error: Too many parameters!"; usage; exit; fi
@@ -1248,6 +1400,31 @@ case $COMMAND in
 		esac
 		;;
 	help)	help
+		;;
+	fanspeed)	if [ $# -ge 2 ]; then IP_ADDRESS=$2; fi
+		if [ $# -ge 3 ]; then TELNET_PORT=$3; fi
+		if [ $# -gt 3 ]; then echo "Error: Too many parameters!"; usage; exit; fi
+		fanspeed
+		;;
+	systemp)	if [ $# -ge 2 ]; then IP_ADDRESS=$2; fi
+		if [ $# -ge 3 ]; then TELNET_PORT=$3; fi
+		if [ $# -gt 3 ]; then echo "Error: Too many parameters!"; usage; exit; fi
+		systemp
+		;;
+	currentwatt)	if [ $# -ge 2 ]; then IP_ADDRESS=$2; fi
+		if [ $# -ge 3 ]; then TELNET_PORT=$3; fi
+		if [ $# -gt 3 ]; then echo "Error: Too many parameters!"; usage; exit; fi
+		currentwatt
+		;;
+	filterusage)	if [ $# -ge 2 ]; then IP_ADDRESS=$2; fi
+		if [ $# -ge 3 ]; then TELNET_PORT=$3; fi
+		if [ $# -gt 3 ]; then echo "Error: Too many parameters!"; usage; exit; fi
+		filterusage
+		;;
+	powermode)	if [ $# -ge 2 ]; then IP_ADDRESS=$2; fi
+		if [ $# -ge 3 ]; then TELNET_PORT=$3; fi
+		if [ $# -gt 3 ]; then echo "Error: Too many parameters!"; usage; exit; fi
+		powermode
 		;;
 	*)	echo "Error: Unknown Command: '$1'"
 		usage
