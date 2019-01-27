@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Use echo -e "$(~/Applications/uhd51/uhd51.sh information)" to print all output at once
+# Use echo -e "$(~/Applications/Optoma/Optoma.sh)" to print all output at once
 
 usage () {
 	echo "Usage: $(basename $0) command [parameter] [ip-address [port]]"
@@ -18,13 +18,13 @@ help () {
 	echo "Information                                    Get current information of projector"
 	echo "OtherInformation                               Get other information of projector"
 	echo "Power          On|Off|Status                   Turn projector on or off, or get power status"
-	echo "Brightness     Bright|Eco|Eco+|Dynamyc|DynamicBlack Off|
-               DynamicBlack 1|DynamicBlack 2|DynamicBlack 3|Status
-                                               Set Brightness Mode, or get status"
+	echo "Brightness     Bright|Eco|Eco+|Dynamic|DynamicBlack Off|
+               DynamicBlack 1|DynamicBlack 2|DynamicBlack 3
+                                               Set Brightness Mode"
 	echo "AspectRatio    4:3|16:9|16:10|LBX|Native|Auto|Auto235|
                Auto235_Subtitle|Superwide|Auto3D|Status
                                                Set Aspect Ratio, or get status"
-	echo "DisplayMode    None|Presentation|Bright|Cinema|sRGB-Reference-Standard|User|User2|
+	echo "DisplayMode    Presentation|Bright|Cinema|sRGB-Reference-Standard|User|User2|
                Blackboard|Classroom|3D|DICOMSIM|Film|Game|Cinema|Vivid|ISFDay|
                ISFNight|ISF3D|2DHS|BlendingMode|Sport|HDR|HDRSim|Status
                                                Set Display Mode, or get status"
@@ -38,6 +38,7 @@ help () {
                displayport|hdbaset|bnc|wireless|flashdrive|networkdisplay|usbdisplay|
                multimedia|3gsdi|3g-sdi|smarttv|status|state|-s
                                                Set input, or get status"
+	echo "3DMode         Off|DLP-Link|IR/Vesa    Put 3D Mode"
 	echo "RemoteControl  power|poweroff|mouseup|mouseleft|mouseenter|mouseright|mousedown|mouseleftclick|
                mouserightclick|up|left|enter|right|down|vkeystone+|vkeystone-|volume-|volume+|
                brightness|menu|zoom|dvid|dvi-d|vga1|avmute|svideo|s-video|vga2|video|contrast|
@@ -81,8 +82,8 @@ TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"351 ${COMMAND_VALUE}"
 		F|"")  STATUS="Unrecognised command!";;
 		Ok) if [[ ${RES:24:4} = +([0-9][0-9][0-9][0-9]) ]]
 				then STATUS="${RES:24:4}"
-			else STATUS="Unrecognised Fan speed (${RES:24:4})"
-			fi;;
+				else STATUS="Unrecognised Fan speed (${RES:24:4})"
+				fi;;
 		*)  STATUS="Unrecognised Fan Speed status!";;
 	esac
 	echo "${COMMAND}: ${STATUS}"
@@ -99,8 +100,8 @@ TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"352 1"
 		F|"")  STATUS="Unrecognised command!";;
 		Ok) if [[ ${RES:24:4} = +([0-9][0-9][0-9][0-9]) ]]
 				then STATUS="${RES:24:4}"
-			else STATUS="Unrecognised System Temperature (${RES:24:4})"
-			fi;;
+				else STATUS="Unrecognised System Temperature (${RES:24:4})"
+				fi;;
 		*)  STATUS="Unrecognised System Temperature status!";;
 	esac
 	echo "${COMMAND}: ${STATUS}"
@@ -116,8 +117,8 @@ TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"321 1"
 		F|"")  STATUS="Unrecognised command!";;
 		Ok) if [[ ${RES:24:4} = +([0-9][0-9][0-9][0-9]) ]]
 				then STATUS="${RES:24:4} hours"
-			else STATUS="Unrecognised Filter Usage Hours (${RES:24:4})"
-			fi;;
+				else STATUS="Unrecognised Filter Usage Hours (${RES:24:4})"
+				fi;;
 		*)  STATUS="Unrecognised Filter Usage Hours status!";;
 	esac
 	echo "${COMMAND}: ${STATUS}"
@@ -131,9 +132,9 @@ TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"150 16"
 	RES=$(telnoptoma "${TELNET_COMMAND}")
 	case ${RES:22:2} in
 		Ok) case ${RES:24:1} in
-			1)    STATUS="Active";;
-			0)    STATUS="Eco.";;
-            esac;;
+				1) STATUS="Active";;
+				0) STATUS="Eco.";;
+        esac;;
 		F|"") STATUS="Unrecognised command!";;
 		*) STATUS="Unrecognised status! (${RES:22:2})";;
 	esac
@@ -352,10 +353,10 @@ brightness () {
 	# Brightness control
 	RES=$(telnoptoma "${TELNET_COMMAND}")
 	case ${RES:22:1} in
-		F) 	case ${RES:24:1} in
+		F|"") 	case ${RES:24:1} in
 						F|"") STATUS="Unrecognised command!";;
         		P) STATUS="Pass!";;
-        		*) STATUS="Unrecognised brightness! (${RES:22:1})";;
+        		*) STATUS="Unrecognised brightness! (${RES:24})";;
         esac;;
 		P) STATUS="Pass!";;
 		*) STATUS="Unrecognised brightness! (${RES:22:1})";;
@@ -603,7 +604,7 @@ colortemp () {
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}36 6"
 			;;
 		reset|-r)
-			COMMAND="reset"
+			COMMAND="Reset"
 			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}33 1"
 			;;
 		state|status|-s)
@@ -683,10 +684,10 @@ brilliantcolor () {
 	# Brilliant color control
 	RES=$(telnoptoma "${TELNET_COMMAND}")
 	case ${RES:22:1} in
-		F|"") 	case ${RES:24:1} in
-				"")	STATUS="Unrecognised command!";;
-        *)  STATUS="Fail!";;
-        esac;;
+		F|"") case ${RES:24:1} in
+					"")	STATUS="Unrecognised command!";;
+        	*)  STATUS="Fail!";;
+        	esac;;
 		P) STATUS="Pass!";;
 		*) STATUS="Unrecognised Brilliant color! (${RES:22:1})";;
 	esac
@@ -776,6 +777,31 @@ volume () {
 		P) STATUS="Pass!";;
 		F) STATUS="Fail!";;
 		*) STATUS="Unrecognised Volume! (${RES:22:2})";;
+	esac
+	echo "${COMMAND}: ${STATUS}"
+}
+3dmode () {
+	case $1 in
+		off|0)
+			COMMAND="Off"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}230 0"
+			;;
+		dlplink|dlp-link|dlp)
+			COMMAND="DLP-Link"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}230 1"
+			;;
+		irvesa|ir-vesa|ir|vesa|ir/vesa)
+			COMMAND="IR / VESA"
+			TELNET_COMMAND="${LEAD_CODE}${PROJECTOR_ID}230 2"
+			;;
+	esac
+
+	# 3D Mode control
+	RES=$(telnoptoma "${TELNET_COMMAND}")
+	case ${RES:22:2} in
+		P) STATUS="Pass!";;
+		F|"") STATUS="Unrecognised command!";;
+		*) STATUS="Unrecognised 3D Mode! (${RES:22:2})";;
 	esac
 	echo "${COMMAND}: ${STATUS}"
 }
@@ -1263,7 +1289,7 @@ case $COMMAND in
 		esac
 		;;
 	brightness)	case $PARAMETER in
-			bright|eco|ecoplus|eco-plus|-eplus|dynamic|dboff|db1|db2|db3|-b|-e|-d|?)
+			bright|eco|ecoplus|eco-plus|-eplus|dynamic|dboff|db1|db2|db3|-b|-e|-d)
 				if [ $# -ge 3 ]; then IP_ADDRESS=$3; fi
 				if [ $# -ge 4 ]; then TELNET_PORT=$4; fi
 				if [ $# -gt 4 ]; then echo "Error: Too many parameters!"; usage; exit; fi
@@ -1367,6 +1393,21 @@ case $COMMAND in
 				;;
 		esac
 		;;
+		3dmode)	case $PARAMETER in
+			off|0|dlp-link|dlplink|dlp|ir-vesa|irvesa|ir|vesa|ir/vesa)
+				if [ $# -ge 3 ]; then IP_ADDRESS=$3; fi
+				if [ $# -ge 4 ]; then TELNET_PORT=$4; fi
+				if [ $# -gt 4 ]; then echo "Error: Too many parameters!"; usage; exit; fi
+				3dmode "$PARAMETER"
+				;;
+			"")	echo "Error: No Parameter supplied for $PARAMETER command"
+				usage
+				;;
+			*)	echo "Error: Unknown Parameter for $PARAMETER command: '$2'"
+				usage
+				;;
+		esac
+		;;
     input)	case $PARAMETER in
 			hdmi1|hdmi2|hdmi3|dvi-d|dvid|dvia|dvi-a|vga|vga1|vga2|component|svideo|s-video|displayport|hdbaset|bnc|wireless|flashdrive|networkdisplay|usbdisplay|multimedia|3gsdi|3g-sdi|smarttv|status|state|-s|?)
 				if [ $# -ge 3 ]; then IP_ADDRESS=$3; fi
@@ -1381,8 +1422,6 @@ case $COMMAND in
 				usage
 				;;
 		esac
-		;;
-	help)	help
 		;;
     remotecontrol)	case $PARAMETER in
 			power|poweroff|mouseup|mouseleft|mouseenter|mouseright|mousedown|mouseleftclick|mouserightclick|up|left|enter|right|down|vkeystone+|vkeystone-|volume-|volume+|brightness|menu|zoom|dvid|dvi-d|vga1|avmute|svideo|s-video|vga2|video|contrast|freeze|lensshift|zoom+|zoom-|focus+|focus-|mode|aspectratio|12vtriggeron|12vtriggeroff|info|re-sync|resync|hdmi1|hdmi2|bnc|component|source|1|2|3|4|5|6|7|8|9|0|gamma|pip|lenshleft|lenshright|lensvleft|lensvright|hkeystone+|hkeystone-|hotkeyf1|hotkeyf2|hotkeyf3|pattern|"exit"|hdmi3|displayport|mute|3d|db|sleeptimer|home|"return")
