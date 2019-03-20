@@ -80,7 +80,7 @@ TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"351 ${COMMAND_VALUE}"
 	RES=$(telnoptoma "${TELNET_COMMAND}")
 	case ${RES:22:2} in
 		F|"")  STATUS="Unrecognised command!";;
-		Ok) if [[ ${RES:24:4} = +([0-9][0-9][0-9][0-9]) ]]
+		Ok) if [[ ${RES:24:4} =~ ^-?[0-9]+$ ]]
 				then STATUS="${RES:24:4}"
 				else STATUS="Unrecognised Fan speed (${RES:24:4})"
 				fi;;
@@ -98,7 +98,7 @@ TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"352 1"
 	RES=$(telnoptoma "${TELNET_COMMAND}")
 	case ${RES:22:2} in
 		F|"")  STATUS="Unrecognised command!";;
-		Ok) if [[ ${RES:24:4} = +([0-9][0-9][0-9][0-9]) ]]
+		Ok) if [[ ${RES:24:4} =~ ^-?[0-9]+$ ]]
 				then STATUS="${RES:24:4}"
 				else STATUS="Unrecognised System Temperature (${RES:24:4})"
 				fi;;
@@ -115,7 +115,7 @@ TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"321 1"
 	RES=$(telnoptoma "${TELNET_COMMAND}")
 	case ${RES:22:2} in
 		F|"")  STATUS="Unrecognised command!";;
-		Ok) if [[ ${RES:24:4} = +([0-9][0-9][0-9][0-9]) ]]
+		Ok) if [[ ${RES:24:4} =~ ^-?[0-9]+$ ]]
 				then STATUS="${RES:24:4} hours"
 				else STATUS="Unrecognised Filter Usage Hours (${RES:24:4})"
 				fi;;
@@ -150,7 +150,7 @@ TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"358 1"
 	RES=$(telnoptoma "${TELNET_COMMAND}")
 	case ${RES:22:2} in
 		F|"")  STATUS="Unrecognised command!";;
-		Ok) if [[ ${RES:24:4} = +([0-9][0-9][0-9][0-9]) ]]
+		Ok) if [[ ${RES:24:4} =~ ^-?[0-9]+$ ]]
 				then STATUS="${RES:24:4}"
 			else STATUS="Unrecognised Current Watt (${RES:24:4})"
 			fi;;
