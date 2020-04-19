@@ -174,7 +174,7 @@ TELNET_COMMAND=${LEAD_CODE}${PROJECTOR_ID}"150 1"
 		   esac
 		   echo "Status:            ${STATUS}"
 		   case ${RES:25:5} in
-			*) if [[ ${RES:25:5} = +([0-9][0-9][0-9][0-9][0-9]) ]]
+			*) if [[ ${RES:25:5} =~ ^-?[0-9]+$ ]]
 				then STATUS="${RES:25:5} hours"
 			else STATUS="Unrecognised Hours value (${RES:25:5})"
 				fi;;
